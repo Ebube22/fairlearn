@@ -332,7 +332,7 @@ has been achieved.
     >>> print(true_positive_rate_difference(y_true,
     ...                                     y_pred,
     ...                                     sensitive_features=sf_data))
-    1.0
+    0.2
 
 
 .. _assessment_false_positive_rate_parity:
@@ -382,7 +382,7 @@ parity has been achieved.
     >>> print(false_positive_rate_difference(y_true,
     ...                                      y_pred,
     ...                                      sensitive_features=sf_data))
-    0.5
+    1.0
 
 
 .. _assessment_four_fifths:
