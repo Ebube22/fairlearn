@@ -286,7 +286,6 @@ We then return the larger of these two differences.
     0.0
 
 
-
 .. _assessment_equal_opportunity:
 
 Equal opportunity
@@ -295,15 +294,95 @@ Equal opportunity
 Equal opportunity is a relaxed version of equalized odds that only considers
 conditional expectations with respect to positive labels, i.e., :math:`Y=1`.
 :footcite:p:`hardt2016equality`
-Another way of thinking about this metric is
-requiring equal outcomes only within the subset of records belonging to the
-positive class. In the hiring example, equal opportunity requires that the
-individuals in *group A* who are qualified to be hired are just as likely to
-be chosen as individuals in *group B* who are qualified to be hired.
-However, by not considering whether false
-positive rates are equivalent across groups, equal opportunity does not
-capture the costs of missclassification disparities.
+Another way of thinking about this metric is requiring equal outcomes only
+within the subset of records belonging to the positive class.
 
+In the hiring example, equal opportunity requires that the individuals in
+*group A* who are qualified to be hired are just as likely to be chosen as
+individuals in *group B* who are qualified to be hired.
+
+We mathematically define equal opportunity as requiring equal true positive
+rates across groups. A classifier :math:`h` satisfies equal opportunity under
+a distribution over :math:`(X, A, Y)` if:
+
+.. math::
+
+   \P[h(X) = 1 \mid A = a, Y = 1] = \P[h(X) = 1 \mid Y = 1] \quad \forall a
+
+Equal opportunity is particularly appropriate in settings where false negatives
+carry the greatest cost — that is, where failing to identify a qualified
+individual is the primary concern. In a medical screening context, for example,
+equal opportunity would require that a disease is detected at equal rates
+across demographic groups, ensuring no group is disproportionately missed.
+
+By not considering whether false positive rates are equivalent across groups,
+equal opportunity does not capture the full costs of misclassification
+disparities. If both types of error carry meaningful consequences, the stricter
+:ref:`equalized odds <assessment_equalized_odds>` criterion may be more
+appropriate.
+
+Fairlearn provides :func:`true_positive_rate_difference` to compute this
+disparity as a scalar result. A value of 0 indicates that equal opportunity
+has been achieved.
+
+.. doctest:: common_fairness_metrics_code
+    :options: +NORMALIZE_WHITESPACE
+
+    >>> from fairlearn.metrics import true_positive_rate_difference
+    >>> print(true_positive_rate_difference(y_true,
+    ...                                     y_pred,
+    ...                                     sensitive_features=sf_data))
+    0.2
+
+
+.. _assessment_false_positive_rate_parity:
+
+False positive rate parity
+--------------------------
+
+False positive rate (FPR) parity requires that a machine learning model's
+false alarm rate is equal across all sensitive groups. Among all individuals
+who do not qualify for a positive outcome (:math:`Y=0`), the model should
+incorrectly flag them at the same rate regardless of group membership.
+
+We mathematically define false positive rate parity as:
+
+.. math::
+
+   \P[h(X) = 1 \mid A = a, Y = 0] = \P[h(X) = 1 \mid Y = 0] \quad \forall a
+
+FPR parity is most appropriate in settings where false positives are the
+primary concern — where incorrectly flagging an individual carries significant
+harm. In a fraud detection context, for example, FPR parity would require that
+legitimate transactions are incorrectly flagged at equal rates across customer
+groups, ensuring that no group faces disproportionate inconvenience or scrutiny.
+
+Similarly, in criminal justice applications such as recidivism prediction,
+disparities in false positive rates across racial groups can mean that
+individuals from certain groups are more likely to be incorrectly assessed
+as high-risk. FPR parity is one mechanism for diagnosing and addressing
+this type of quality-of-service harm.
+
+It is worth noting that equal opportunity (TPR parity) and FPR parity cannot
+always be satisfied simultaneously when base rates differ across groups.
+:footcite:p:`hardt2016equality` When they conflict, the appropriate choice
+depends on which type of misclassification carries greater harm in the
+specific context. For settings where both types of error matter equally,
+:ref:`equalized odds <assessment_equalized_odds>` may be more appropriate
+as it enforces parity on both rates simultaneously.
+
+Fairlearn provides :func:`false_positive_rate_difference` to compute this
+disparity as a scalar result. A value of 0 indicates that false positive rate
+parity has been achieved.
+
+.. doctest:: common_fairness_metrics_code
+    :options: +NORMALIZE_WHITESPACE
+
+    >>> from fairlearn.metrics import false_positive_rate_difference
+    >>> print(false_positive_rate_difference(y_true,
+    ...                                      y_pred,
+    ...                                      sensitive_features=sf_data))
+    1.0
 
 
 .. _assessment_four_fifths:
@@ -373,7 +452,7 @@ with mathematical measures of disparity, see
 Summary
 -------
 
-We have introduced three commonly used fairness metrics in this section,
+We have introduced four commonly used fairness metrics in this section,
 which can be summed up as follows:
 
 * Demographic Parity
@@ -389,6 +468,9 @@ which can be summed up as follows:
       distribution between groups, making it tricky to use as an optimization
       constraint
 
+    * *Fairlearn functions:* :func:`demographic_parity_difference`,
+      :func:`demographic_parity_ratio`
+
 * Equalized Odds
 
     * *What it compares:* True and False Positive rates between different groups
@@ -402,6 +484,9 @@ which can be summed up as follows:
       will also accentuate any statistical issues related to sensitive groups with low
       membership
 
+    * *Fairlearn functions:* :func:`equalized_odds_difference`,
+      :func:`equalized_odds_ratio`
+
 * Equal opportunity
 
     * *What it compares:* True Positive rates between different groups
@@ -414,6 +499,23 @@ which can be summed up as follows:
       may hold little value. A large imbalance between the positive and negative classes
       will also accentuate any statistical issues related to sensitive groups with low
       membership
+
+    * *Fairlearn functions:* :func:`true_positive_rate_difference`
+
+* False positive rate parity
+
+    * *What it compares:* False Positive rates between different groups
+
+    * *Reason to use:* If false positives carry the greatest harm — for example,
+      in fraud detection where incorrectly flagging legitimate transactions is
+      the primary concern, or in recidivism prediction where false positives
+      disproportionately affect minority groups
+
+    * *Caveats:* Does not account for true positive rate disparities. TPR parity
+      and FPR parity cannot always be satisfied simultaneously when base rates
+      differ across groups. If both error types matter equally, use equalized odds
+
+    * *Fairlearn functions:* :func:`false_positive_rate_difference`
 
 
 However, the fact these are common metrics does not make them applicable to any given
